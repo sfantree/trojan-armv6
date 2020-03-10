@@ -1,0 +1,23 @@
+FROM arm32v6/alpine:3.11
+COPY . trojan
+
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
+    && apk update \
+    && apk add --no-cache --allow-untrusted  --virtual .build-deps \
+        build-base \
+        cmake \
+        boost-dev \
+        openssl-dev \
+        mariadb-connector-c-dev \
+    && (cd trojan && cmake . && make -j $(nproc) && strip -s trojan \
+    && mv trojan /usr/local/bin) \
+    && rm -rf trojan \
+    && apk del .build-deps \
+    && apk add --no-cache --allow-untrusted  --virtual .trojan-rundeps \
+        libstdc++ \
+        boost-system \
+        boost-program_options \
+        mariadb-connector-c
+
+WORKDIR /config
+CMD ["trojan", "config.json"]
